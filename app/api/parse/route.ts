@@ -63,10 +63,14 @@ export async function POST(req: NextRequest) {
 
   const supabase = getSupabaseServerClient();
 
-  // Rate limiting: count requests from this IP hash in the last minute
+  // Rate limiting: count requests from this IP hash in the last minute.
+  // Uses its own ledger table rather than counting rows in `downloads`,
+  // because `downloads` is only written to on a cache MISS — a burst of
+  // requests for an already-cached URL would never have counted against
+  // the limit otherwise.
   const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
   const { count } = await supabase
-    .from("downloads")
+    .from("parse_rate_limit_hits")
     .select("id", { count: "exact", head: true })
     .eq("ip_hash", ipHash)
     .gte("created_at", oneMinuteAgo);
@@ -80,6 +84,15 @@ export async function POST(req: NextRequest) {
       { status: 429 }
     );
   }
+
+  // Fire-and-forget: logging this hit shouldn't block or fail the actual
+  // request if Supabase is briefly slow/unavailable.
+  supabase
+    .from("parse_rate_limit_hits")
+    .insert({ ip_hash: ipHash })
+    .then(({ error }) => {
+      if (error) console.warn("[api/parse] failed to log rate-limit hit:", error.message);
+    });
 
   // Same video can arrive as several equivalent URLs (short links, tracking
   // params, etc) — canonicalize first so they all hit the same cache entry.

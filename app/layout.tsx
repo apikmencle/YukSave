@@ -61,7 +61,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Set by middleware.ts per-request; lets this inline script pass the
+  // Set by proxy.ts per-request; lets this inline script pass the
   // 'script-src ... nonce-<value>' CSP directive instead of needing
   // 'unsafe-inline' (which would defeat the point of having a CSP at all).
   // headers() is async as of Next.js 15+.

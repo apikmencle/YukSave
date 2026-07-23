@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Stats = {
   total: number;
@@ -12,9 +12,39 @@ type Stats = {
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
+  // Distinguishes "we haven't checked yet" from "checked, not logged in" —
+  // without this the login form would flash on screen for a split second
+  // even when the person already has a valid 12h session cookie.
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
+
+  // The admin session cookie is httpOnly and lasts 12h, but until now the
+  // page always started at the login form regardless — forcing a re-login
+  // on every refresh even with a still-valid cookie. Probe /api/admin/stats
+  // once on mount: 200 means the cookie is still good, so skip straight to
+  // the dashboard with the data we already fetched.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/stats");
+        if (cancelled) return;
+        if (res.ok) {
+          setStats(await res.json());
+          setAuthed(true);
+        }
+      } catch {
+        // No session / offline — fall through to the login form.
+      } finally {
+        if (!cancelled) setCheckingSession(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +85,14 @@ export default function AdminPage() {
     setAuthed(false);
     setStats(null);
     setPassword("");
+  }
+
+  if (checkingSession) {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-6">
+        <p className="text-ink-soft text-sm">Memeriksa sesi...</p>
+      </main>
+    );
   }
 
   if (!authed) {

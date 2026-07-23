@@ -135,11 +135,15 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
+    // Log the real reason server-side (Vercel function logs) only — the
+    // client only needs to know it failed, not upstream hostnames, abort
+    // reasons, or other internals that a raw err.message could expose.
+    console.error(
+      "[api/download] fetch failed:",
+      err instanceof Error ? err.message : err
+    );
     return NextResponse.json(
-      {
-        message: "Terjadi kesalahan saat menyiapkan file untuk diunduh.",
-        detail: err instanceof Error ? err.message : "unknown error",
-      },
+      { message: "Terjadi kesalahan saat menyiapkan file untuk diunduh." },
       { status: 500 }
     );
   }

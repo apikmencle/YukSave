@@ -132,13 +132,21 @@ async function parseWithTikwm(url: string): Promise<TikTokParseResult> {
  * Parser #2: tiklydown.eu.org public endpoint.
  * Used as fallback when tikwm is down or rate-limits us.
  *
- * NOTE: this is an unofficial third-party API — the JSON shape below
- * is based on how similar wrapper projects consume it, but it has NOT
- * been tested against a live response in this environment (no network
- * access here). Test it for real once deployed; if a field comes back
- * empty, open the raw JSON in the browser
- * (https://api.tiklydown.eu.org/api/download?url=<a-tiktok-url>)
- * and adjust the field paths below to match.
+ * NOTE: this is an unofficial third-party API. The field paths below
+ * (`video.noWatermark`, `title`, `author.uniqueId`) match the shape
+ * used by other public wrapper packages built on the same underlying
+ * service (e.g. the `tiklydown()` helper in
+ * github.com/MRHRTZ/Tiktok-Scraper-Without-Watermark), which is the best
+ * confirmation available without hitting the live endpoint directly
+ * (api.tiklydown.eu.org disallows automated/robots access, so it can't be
+ * probed from a script or CI). Treat this as reasonably likely correct,
+ * not verified — do one real manual request before relying on it in
+ * production: open
+ * https://api.tiklydown.eu.org/api/download?url=<a-tiktok-url>
+ * in a browser and compare against the field paths below. If they don't
+ * match, thrown errors now name the specific field that was missing
+ * (see below) so a mismatch is obvious in the Vercel logs rather than
+ * silently returning a broken result.
  */
 async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
   const res = await fetchWithTimeout(
@@ -146,9 +154,13 @@ async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
     { headers: { Accept: "application/json" } },
     PARSER_TIMEOUT_MS
   );
-  if (!res.ok) throw new Error("tiklydown request failed");
+  if (!res.ok) throw new Error(`tiklydown request failed: HTTP ${res.status}`);
 
   const json = await res.json();
+  if (!json || typeof json !== "object") {
+    throw new Error("tiklydown parse failed: response was not a JSON object");
+  }
+
   const video = json.video ?? json;
   const author = json.author ?? {};
 
@@ -172,7 +184,11 @@ async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
     video?.noWatermark ?? video?.play ?? video?.url ?? json.noWatermark;
 
   if (!noWatermarkUrl) {
-    throw new Error("tiklydown parse failed: no video or images in response");
+    throw new Error(
+      "tiklydown parse failed: none of video.noWatermark, video.play, " +
+        "video.url, or json.noWatermark were present — response shape may " +
+        "have changed, see the field-mapping note above parseWithTiklydown"
+    );
   }
 
   return {
