@@ -202,10 +202,24 @@ async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
   };
 }
 
-const parserChain: Parser[] = [
-  { name: "tikwm", run: parseWithTikwm },
-  { name: "tiklydown", run: parseWithTiklydown },
-];
+// tiklydown is intentionally NOT in the active chain below. Verified broken
+// on 2026-07-24: its TLS certificate's subjectAltName doesn't cover
+// api.tiklydown.eu.org — confirmed independently via `curl -v` (SSL error
+// 60) and Chrome (NET::ERR_CERT_COMMON_NAME_INVALID), so this is a real
+// server-side misconfiguration on their end, not a local network issue.
+// Every request to it currently fails at the TLS handshake, before any
+// application logic runs — so keeping it "active" would only add a wasted
+// ~6s timeout at exactly the moment a fallback is needed most (when tikwm
+// is already down). The parseWithTiklydown function itself is left in
+// place in case their cert gets fixed later, but do NOT re-add it to
+// parserChain without re-running the curl check above first. Until then,
+// this app effectively has NO fallback parser — find and verify a real
+// working replacement before relying on this in production.
+const parserChain: Parser[] = [{ name: "tikwm", run: parseWithTikwm }];
+
+// Keep this referenced so it doesn't trip an unused-export/dead-code lint
+// rule while it's parked out of the chain above.
+void parseWithTiklydown;
 
 export async function parseTikTokUrl(url: string): Promise<TikTokParseResult> {
   let lastError: unknown;

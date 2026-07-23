@@ -59,8 +59,15 @@ dan 7 hari terakhir, serta link yang paling sering diminta.
 
 - **Parser TikTok tidak resmi**: endpoint yang dipakai (`tikwm.com`)
   bisa berubah atau mati sewaktu-waktu karena bukan API resmi TikTok.
-  Sudah disiapkan struktur fallback chain di `lib/parsers/tiktok.ts` —
-  tambahkan parser kedua di sana begitu kamu punya endpoint cadangan.
+  Struktur fallback chain sudah ada di `lib/parsers/tiktok.ts`, tapi
+  **saat ini cuma ada satu parser aktif (`tikwm`)** — kandidat fallback
+  kedua (`tiklydown.eu.org`) sudah ditulis tapi dicabut sementara dari
+  chain karena sertifikat TLS-nya salah konfigurasi di sisi mereka
+  (subjectAltName tidak cocok dengan `api.tiklydown.eu.org`, terverifikasi
+  lewat `curl -v` dan Chrome, 2026-07-24). Kalau `tikwm` down, aplikasi
+  ini untuk sementara tidak punya fallback sama sekali. Cari dan **uji
+  manual** (`curl -v <url-endpoint>`) kandidat pengganti sebelum
+  menambahkannya kembali ke `parserChain` di `lib/parsers/tiktok.ts`.
 - **Rate limiting**: dibatasi 10 request/menit per IP (di-HMAC pakai
   `IP_HASH_SECRET`, bukan IP mentah yang disimpan) lewat tabel
   `downloads` di Supabase. Ubah `RATE_LIMIT_PER_MINUTE` di
