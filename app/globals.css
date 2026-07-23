@@ -1,0 +1,92 @@
+/* Archivo Black / Inter / JetBrains Mono are already self-hosted via
+   next/font/google in app/layout.tsx (see --font-display, --font-body,
+   --font-mono, wired up in tailwind.config.ts). A duplicate @import here
+   was redundant, and style-src in proxy.ts's CSP doesn't allow
+   fonts.googleapis.com anyway, so it was silently blocked in production. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Channel triplets (not hex) so Tailwind's `/opacity` modifiers, e.g.
+   bg-ink/90, can wrap them as rgb(var(--color-ink) / 0.9). */
+:root {
+  --color-paper: 237 237 231; /* #EDEDE7 */
+  --color-surface: 255 255 255; /* #FFFFFF */
+  --color-ink: 27 36 48; /* #1B2430 */
+  --color-ink-soft: 74 85 104; /* #4A5568 */
+  --color-rec: 255 75 62; /* #FF4B3E */
+  --color-rec-dark: 217 60 48; /* #D93C30 */
+  --color-tape: 215 213 201; /* #D7D5C9 */
+  --color-skeleton-1: 215 213 201; /* #D7D5C9 */
+  --color-skeleton-2: 232 230 220; /* #E8E6DC */
+}
+
+.dark {
+  --color-paper: 18 22 29; /* #12161D */
+  --color-surface: 28 34 44; /* #1C222C */
+  --color-ink: 237 237 231; /* #EDEDE7 */
+  --color-ink-soft: 154 165 180; /* #9AA5B4 */
+  --color-rec: 255 107 94; /* #FF6B5E */
+  --color-rec-dark: 255 75 62; /* #FF4B3E */
+  --color-tape: 44 53 67; /* #2C3543 */
+  --color-skeleton-1: 38 46 58; /* #262E3A */
+  --color-skeleton-2: 49 59 73; /* #313B49 */
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: rgb(var(--color-paper));
+  color: rgb(var(--color-ink));
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+@keyframes pulse-rec {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.rec-dot {
+  animation: pulse-rec 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot {
+    animation: none;
+  }
+}
+
+.tape-counter {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--color-skeleton-1)) 25%,
+    rgb(var(--color-skeleton-2)) 37%,
+    rgb(var(--color-skeleton-1)) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
