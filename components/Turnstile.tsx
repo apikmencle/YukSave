@@ -41,6 +41,17 @@ export default function Turnstile({ onToken }: { onToken: (token: string | null)
       return;
     }
 
+    // Strict Mode (React 19, development only) runs this effect twice in
+    // a row — without this guard that would inject the Cloudflare script
+    // tag twice and could double-render the widget into the container.
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]'
+    );
+    if (existing) {
+      existing.addEventListener("load", renderWidget);
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
     script.async = true;

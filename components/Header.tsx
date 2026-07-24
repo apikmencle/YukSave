@@ -35,6 +35,20 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Close either dropdown on Escape — keyboard-only users had no way to
+  // dismiss it otherwise, since the outside-click handler above only
+  // fires on mouse input.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setLangOpen(false);
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <header className="w-full border-b border-tape">
       <div className="max-w-3xl mx-auto flex items-center justify-between gap-2.5 px-6 py-4">

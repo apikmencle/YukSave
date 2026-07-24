@@ -80,19 +80,64 @@ export async function canonicalizeTikTokUrl(url: string): Promise<string> {
   return match ? match[0] : finalUrl;
 }
 
+const TIKWM_RETRY_ATTEMPTS = 2;
+const TIKWM_RETRY_DELAY_MS = 400;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * tikwm is currently the ONLY parser in the active chain (see the note
+ * above `parserChain` below) — a transient hiccup on their end (a 5xx, a
+ * dropped connection, a momentary rate-limit) now fails the whole request
+ * with no other parser to fall back to. A short retry absorbs exactly
+ * that class of failure without adding real cost: it only fires when the
+ * first attempt already failed, and skips retrying failures that a retry
+ * can't fix (a genuinely invalid/private/deleted TikTok URL, which tikwm
+ * reports via `json.code !== 0` rather than a network-level failure).
+ */
+async function fetchTikwm(url: string): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= TIKWM_RETRY_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetchWithTimeout(
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+        { headers: { "User-Agent": "Mozilla/5.0" } },
+        PARSER_TIMEOUT_MS
+      );
+      // A non-ok HTTP status (5xx, 429, etc.) is worth retrying — an
+      // application-level "video not found" comes back as res.ok with
+      // json.code !== 0, which we deliberately do NOT retry (see below).
+      if (!res.ok) throw new Error(`tikwm request failed: HTTP ${res.status}`);
+      return res;
+    } catch (err) {
+      lastErr = err;
+      // A timeout (AbortError) already burned the full PARSER_TIMEOUT_MS
+      // budget — retrying it would risk stacking two full timeouts and
+      // blowing past the platform's own function timeout (10s on
+      // Vercel's default/hobby tier). Only retry failures that fail
+      // fast (connection refused, DNS error, an immediate 5xx), where a
+      // second attempt is cheap enough to be worth it.
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      if (isTimeout || attempt >= TIKWM_RETRY_ATTEMPTS) break;
+      await sleep(TIKWM_RETRY_DELAY_MS);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("tikwm request failed");
+}
+
 /**
  * Parser #1: tikwm.com public endpoint.
  * Free, no key required, but rate-limited and can change without notice.
  */
 async function parseWithTikwm(url: string): Promise<TikTokParseResult> {
-  const res = await fetchWithTimeout(
-    `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
-    { headers: { "User-Agent": "Mozilla/5.0" } },
-    PARSER_TIMEOUT_MS
-  );
-  if (!res.ok) throw new Error("tikwm request failed");
+  const res = await fetchTikwm(url);
 
   const json = await res.json();
+  // Not retried on purpose: json.code !== 0 means tikwm understood the
+  // request and rejected it (bad/private/deleted video), not a transient
+  // failure — retrying would just waste ~6s before failing the same way.
   if (json.code !== 0 || !json.data) throw new Error("tikwm parse failed");
 
   const d = json.data;
@@ -215,6 +260,20 @@ async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
 // parserChain without re-running the curl check above first. Until then,
 // this app effectively has NO fallback parser — find and verify a real
 // working replacement before relying on this in production.
+//
+// UPDATE (also 2026-07-24, same day): a web-fetch against
+// https://api.tiklydown.eu.org/ from a *different* network path (not
+// Vercel/Node, no TLS pinning info available) succeeded and returned
+// their normal docs page — which contradicts the curl/Chrome finding
+// above. This is NOT strong enough evidence to re-enable it (different
+// client, different DNS/CDN edge, possibly different cert-validation
+// behavior) — it just means the earlier "broken" finding is worth
+// re-running with a fresh `curl -v https://api.tiklydown.eu.org/api/download?url=...`
+// from the actual deploy environment before trusting either result. Also
+// note /swagger.json on that host now blocks automated fetches (robots
+// disallow), so re-verify the field-mapping comment on
+// parseWithTiklydown by hand too if you do re-enable it — don't assume
+// the shape documented there is still current.
 const parserChain: Parser[] = [{ name: "tikwm", run: parseWithTikwm }];
 
 // Keep this referenced so it doesn't trip an unused-export/dead-code lint

@@ -53,6 +53,19 @@ export const metadata: Metadata = {
       "Tempel link TikTok, dapatkan video HD tanpa watermark dalam hitungan detik. Gratis, tanpa aplikasi.",
     locale: "id_ID",
     type: "website",
+    url: SITE_URL,
+  },
+  twitter: {
+    // Without this block, links shared on Twitter/X fall back to a plain
+    // text link instead of a rich card — the openGraph tags above aren't
+    // enough on their own, X reads its own twitter:* tags first.
+    card: "summary_large_image",
+    title: "YukSave — Download Video TikTok Tanpa Watermark",
+    description:
+      "Tempel link TikTok, dapatkan video HD tanpa watermark dalam hitungan detik. Gratis, tanpa aplikasi.",
+  },
+  alternates: {
+    canonical: SITE_URL,
   },
 };
 
