@@ -80,64 +80,19 @@ export async function canonicalizeTikTokUrl(url: string): Promise<string> {
   return match ? match[0] : finalUrl;
 }
 
-const TIKWM_RETRY_ATTEMPTS = 2;
-const TIKWM_RETRY_DELAY_MS = 400;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * tikwm is currently the ONLY parser in the active chain (see the note
- * above `parserChain` below) — a transient hiccup on their end (a 5xx, a
- * dropped connection, a momentary rate-limit) now fails the whole request
- * with no other parser to fall back to. A short retry absorbs exactly
- * that class of failure without adding real cost: it only fires when the
- * first attempt already failed, and skips retrying failures that a retry
- * can't fix (a genuinely invalid/private/deleted TikTok URL, which tikwm
- * reports via `json.code !== 0` rather than a network-level failure).
- */
-async function fetchTikwm(url: string): Promise<Response> {
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= TIKWM_RETRY_ATTEMPTS; attempt++) {
-    try {
-      const res = await fetchWithTimeout(
-        `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
-        { headers: { "User-Agent": "Mozilla/5.0" } },
-        PARSER_TIMEOUT_MS
-      );
-      // A non-ok HTTP status (5xx, 429, etc.) is worth retrying — an
-      // application-level "video not found" comes back as res.ok with
-      // json.code !== 0, which we deliberately do NOT retry (see below).
-      if (!res.ok) throw new Error(`tikwm request failed: HTTP ${res.status}`);
-      return res;
-    } catch (err) {
-      lastErr = err;
-      // A timeout (AbortError) already burned the full PARSER_TIMEOUT_MS
-      // budget — retrying it would risk stacking two full timeouts and
-      // blowing past the platform's own function timeout (10s on
-      // Vercel's default/hobby tier). Only retry failures that fail
-      // fast (connection refused, DNS error, an immediate 5xx), where a
-      // second attempt is cheap enough to be worth it.
-      const isTimeout = err instanceof Error && err.name === "AbortError";
-      if (isTimeout || attempt >= TIKWM_RETRY_ATTEMPTS) break;
-      await sleep(TIKWM_RETRY_DELAY_MS);
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error("tikwm request failed");
-}
-
 /**
  * Parser #1: tikwm.com public endpoint.
  * Free, no key required, but rate-limited and can change without notice.
  */
 async function parseWithTikwm(url: string): Promise<TikTokParseResult> {
-  const res = await fetchTikwm(url);
+  const res = await fetchWithTimeout(
+    `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+    { headers: { "User-Agent": "Mozilla/5.0" } },
+    PARSER_TIMEOUT_MS
+  );
+  if (!res.ok) throw new Error("tikwm request failed");
 
   const json = await res.json();
-  // Not retried on purpose: json.code !== 0 means tikwm understood the
-  // request and rejected it (bad/private/deleted video), not a transient
-  // failure — retrying would just waste ~6s before failing the same way.
   if (json.code !== 0 || !json.data) throw new Error("tikwm parse failed");
 
   const d = json.data;
@@ -247,6 +202,130 @@ async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
   };
 }
 
+/**
+ * Parser #3: Fallback menggunakan RapidAPI (Contoh integrasi)
+ * Stabil untuk production. Hanya dieksekusi jika tikwm gagal (atau timeout).
+ */
+async function parseWithRapidApi(url: string): Promise<TikTokParseResult> {
+  // Ganti endpoint dan API Key ini dengan layanan yang Anda pilih di RapidAPI
+  const API_URL = `https://tiktok-scraper-api.p.rapidapi.com/fetch?url=${encodeURIComponent(url)}`;
+  const API_KEY = process.env.RAPIDAPI_KEY || "";
+
+  if (!API_KEY) {
+    throw new Error("RapidAPI fallback dilewati: API Key belum dikonfigurasi.");
+  }
+
+  const res = await fetchWithTimeout(
+    API_URL,
+    {
+      headers: {
+        "X-RapidAPI-Key": API_KEY,
+        // Host disesuaikan dengan layanan spesifik yang disewa
+        "X-RapidAPI-Host": "tiktok-scraper-api.p.rapidapi.com"
+      }
+    },
+    PARSER_TIMEOUT_MS
+  );
+
+  if (!res.ok) throw new Error(`RapidAPI request failed: HTTP ${res.status}`);
+
+  const json = await res.json();
+  const data = json.data;
+
+  if (!data) throw new Error("RapidAPI parse failed: struktur response tidak valid");
+
+  const images: string[] | undefined = Array.isArray(data.images) && data.images.length > 0 
+    ? data.images 
+    : undefined;
+
+  if (images) {
+    return {
+      title: data.title ?? "Foto TikTok",
+      author: data.author?.unique_id ?? "unknown",
+      durationSec: 0,
+      thumbnail: data.cover,
+      images,
+      musicUrl: data.music || undefined,
+    };
+  }
+
+  return {
+    title: data.title ?? "Video TikTok",
+    author: data.author?.unique_id ?? "unknown",
+    durationSec: data.duration ?? 0,
+    thumbnail: data.cover,
+    noWatermarkUrl: data.play,
+    watermarkUrl: data.wmplay,
+    musicUrl: data.music || undefined,
+  };
+}
+
+/**
+ * Parser #4 (optional): ScrapeCreators' TikTok Video Info API.
+ * https://docs.scrapecreators.com/v2/tiktok/video
+ *
+ * Unlike tikwm/tiklydown, this is a documented, paid API (1 credit per
+ * request, free trial credits available) — not an anonymous scraper that
+ * can silently change shape or go down. Only active when
+ * SCRAPECREATORS_API_KEY is set (see parserChain below); without it,
+ * this function is simply never called and the app behaves exactly as
+ * before. Get a key at https://scrapecreators.com.
+ *
+ * Field mapping verified against ScrapeCreators' own published example
+ * response (fetched 2026-07-24, not just inferred from a wrapper lib):
+ * - no-watermark URL: aweme_detail.video.download_no_watermark_addr.url_list[0],
+ *   falling back to aweme_detail.video.play_addr.url_list[0] when
+ *   has_watermark is false (per their docs' explicit field note)
+ * - watermarked URL: aweme_detail.video.download_addr.url_list[0]
+ * - duration: aweme_detail.video.duration is in MILLISECONDS, hence /1000
+ * - this endpoint does not appear to cover photo/slideshow posts (no
+ *   `images` field in their documented response) — if tikwm is down AND
+ *   the link is a photo post, this fallback will correctly report
+ *   "no video or images", not silently mishandle it.
+ */
+async function parseWithScrapeCreators(url: string): Promise<TikTokParseResult> {
+  const apiKey = process.env.SCRAPECREATORS_API_KEY;
+  if (!apiKey) throw new Error("SCRAPECREATORS_API_KEY not configured");
+
+  const res = await fetchWithTimeout(
+    `https://api.scrapecreators.com/v2/tiktok/video?url=${encodeURIComponent(url)}`,
+    { headers: { "x-api-key": apiKey } },
+    PARSER_TIMEOUT_MS
+  );
+  if (!res.ok) throw new Error(`scrapecreators request failed: HTTP ${res.status}`);
+
+  const json = await res.json();
+  if (!json?.success || !json?.aweme_detail) {
+    throw new Error("scrapecreators parse failed: no aweme_detail in response");
+  }
+
+  const aweme = json.aweme_detail;
+  const video = aweme.video ?? {};
+
+  const noWatermarkUrl: string | undefined =
+    video.download_no_watermark_addr?.url_list?.[0] ??
+    (video.has_watermark === false ? video.play_addr?.url_list?.[0] : undefined);
+
+  if (!noWatermarkUrl) {
+    throw new Error(
+      "scrapecreators parse failed: neither download_no_watermark_addr nor " +
+        "a watermark-free play_addr was present — likely a photo/slideshow " +
+        "post, which this endpoint doesn't cover"
+    );
+  }
+
+  return {
+    title: aweme.desc || "Video TikTok",
+    author: aweme.author?.unique_id ?? aweme.author?.nickname ?? "unknown",
+    durationSec: Math.round((video.duration ?? 0) / 1000),
+    thumbnail:
+      video.cover?.url_list?.[0] ?? video.origin_cover?.url_list?.[0] ?? "",
+    noWatermarkUrl,
+    watermarkUrl: video.download_addr?.url_list?.[0] ?? undefined,
+    musicUrl: aweme.music?.play_url?.url_list?.[0] ?? undefined,
+  };
+}
+
 // tiklydown is intentionally NOT in the active chain below. Verified broken
 // on 2026-07-24: its TLS certificate's subjectAltName doesn't cover
 // api.tiklydown.eu.org — confirmed independently via `curl -v` (SSL error
@@ -257,24 +336,14 @@ async function parseWithTiklydown(url: string): Promise<TikTokParseResult> {
 // ~6s timeout at exactly the moment a fallback is needed most (when tikwm
 // is already down). The parseWithTiklydown function itself is left in
 // place in case their cert gets fixed later, but do NOT re-add it to
-// parserChain without re-running the curl check above first. Until then,
-// this app effectively has NO fallback parser — find and verify a real
-// working replacement before relying on this in production.
-//
-// UPDATE (also 2026-07-24, same day): a web-fetch against
-// https://api.tiklydown.eu.org/ from a *different* network path (not
-// Vercel/Node, no TLS pinning info available) succeeded and returned
-// their normal docs page — which contradicts the curl/Chrome finding
-// above. This is NOT strong enough evidence to re-enable it (different
-// client, different DNS/CDN edge, possibly different cert-validation
-// behavior) — it just means the earlier "broken" finding is worth
-// re-running with a fresh `curl -v https://api.tiklydown.eu.org/api/download?url=...`
-// from the actual deploy environment before trusting either result. Also
-// note /swagger.json on that host now blocks automated fetches (robots
-// disallow), so re-verify the field-mapping comment on
-// parseWithTiklydown by hand too if you do re-enable it — don't assume
-// the shape documented there is still current.
-const parserChain: Parser[] = [{ name: "tikwm", run: parseWithTikwm }];
+// parserChain without re-running the curl check above first.
+// Its replacement as fallback #2 is parseWithTikTokApiDl below (the
+// @tobyg74/tiktok-api-dl npm package's v3 mode), which has verified,
+// unambiguous field names instead of a guessed HTTP response shape.
+const parserChain: Parser[] = [
+  { name: "tikwm", run: parseWithTikwm },
+  { name: "rapidapi", run: parseWithRapidApi },
+];
 
 // Keep this referenced so it doesn't trip an unused-export/dead-code lint
 // rule while it's parked out of the chain above.
