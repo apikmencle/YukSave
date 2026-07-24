@@ -27,7 +27,7 @@ export const translations = {
       pasteAria: "Tempel dari clipboard",
       pasteFailed: "Tidak bisa mengakses clipboard. Tempel manual ya.",
       cancel: "Batal",
-      slowNotice: "Masih diproses \\u2014 server sumber sedang lambat, mohon tunggu sebentar.",
+      slowNotice: "Masih diproses — server sumber sedang lambat, mohon tunggu sebentar.",
     },
     history: {
       heading: "Riwayat Unduhan",
@@ -92,22 +92,18 @@ export const translations = {
       ],
     },
     footer: {
-      note: "Untuk penggunaan pribadi \u2014 hormati hak cipta kreator asli.",
+      note: "Untuk penggunaan pribadi — hormati hak cipta kreator asli.",
       privacy: "Kebijakan Privasi",
       terms: "Syarat & Ketentuan",
     },
     privacy: {
       title: "Kebijakan Privasi",
       lastUpdated: "Terakhir diperbarui",
-      // Tanggal statis (bukan new Date()) supaya tidak mismatch antara
-      // render server (UTC) dan browser (WIB), dan supaya benar-benar
-      // mencerminkan kapan teks ini terakhir diubah. Update manual tiap
-      // kali isi kebijakan ini benar-benar direvisi.
       lastUpdatedDate: "23 Juli 2026",
       sections: [
         {
           heading: "Data apa yang kami simpan",
-          body: "YukSave mencatat link video yang diminta dan alamat IP dalam bentuk hash (bukan alamat IP asli) untuk keperluan cache dan mencegah penyalahgunaan (rate limiting). Kami tidak menyimpan file video atau foto apapun di server kami \u2014 file diunduh langsung dari sumbernya.",
+          body: "YukSave mencatat link video yang diminta dan alamat IP dalam bentuk hash (bukan alamat IP asli) untuk keperluan cache dan mencegah penyalahgunaan (rate limiting). Kami tidak menyimpan file video atau foto apapun di server kami — file diunduh langsung dari sumbernya.",
         },
         {
           heading: "Kami tidak meminta akun",
@@ -181,7 +177,7 @@ export const translations = {
       pasteAria: "Paste from clipboard",
       pasteFailed: "Couldn't access the clipboard. Please paste it manually.",
       cancel: "Cancel",
-      slowNotice: "Still processing \\u2014 the source server is slow right now, hang tight.",
+      slowNotice: "Still processing — the source server is slow right now, hang tight.",
     },
     history: {
       heading: "Download History",
@@ -246,7 +242,7 @@ export const translations = {
       ],
     },
     footer: {
-      note: "For personal use \u2014 please respect the original creator's copyright.",
+      note: "For personal use — please respect the original creator's copyright.",
       privacy: "Privacy Policy",
       terms: "Terms & Conditions",
     },
@@ -257,7 +253,7 @@ export const translations = {
       sections: [
         {
           heading: "What data we store",
-          body: "YukSave logs the requested video link and a hashed version of the IP address (not the raw IP) for caching and rate limiting purposes. We don't store any video or photo files on our servers \u2014 files are downloaded directly from their source.",
+          body: "YukSave logs the requested video link and a hashed version of the IP address (not the raw IP) for caching and rate limiting purposes. We don't store any video or photo files on our servers — files are downloaded directly from their source.",
         },
         {
           heading: "We don't require an account",
