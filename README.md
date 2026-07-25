@@ -57,17 +57,26 @@ dan 7 hari terakhir, serta link yang paling sering diminta.
 
 ## Catatan penting
 
-- **Parser TikTok tidak resmi**: endpoint yang dipakai (`tikwm.com`)
-  bisa berubah atau mati sewaktu-waktu karena bukan API resmi TikTok.
-  Struktur fallback chain sudah ada di `lib/parsers/tiktok.ts`, tapi
-  **saat ini cuma ada satu parser aktif (`tikwm`)** — kandidat fallback
-  kedua (`tiklydown.eu.org`) sudah ditulis tapi dicabut sementara dari
+- **Parser TikTok tidak resmi**: endpoint utama yang dipakai
+  (`tikwm.com`) bisa berubah atau mati sewaktu-waktu karena bukan API
+  resmi TikTok. `tikwm` sekarang otomatis retry 1x pada kegagalan
+  cepat (5xx/koneksi putus, bukan timeout) sebelum pindah ke parser
+  berikutnya. Chain lengkapnya: `tikwm` (gratis, tanpa key) →
+  `rapidapi` → `scrapecreators` — dua yang terakhir **hanya aktif kalau**
+  `RAPIDAPI_KEY` / `SCRAPECREATORS_API_KEY` diisi di env (lihat
+  `.env.local.example`); **tanpa salah satu key itu, aplikasi tidak
+  punya fallback nyata** kalau `tikwm` down. Isi minimal salah satu
+  sebelum production. Kandidat fallback lain (`tiklydown.eu.org`) sudah
+  ditulis di `parseWithTiklydown` tapi sengaja TIDAK dimasukkan ke
   chain karena sertifikat TLS-nya salah konfigurasi di sisi mereka
   (subjectAltName tidak cocok dengan `api.tiklydown.eu.org`, terverifikasi
-  lewat `curl -v` dan Chrome, 2026-07-24). Kalau `tikwm` down, aplikasi
-  ini untuk sementara tidak punya fallback sama sekali. Cari dan **uji
-  manual** (`curl -v <url-endpoint>`) kandidat pengganti sebelum
-  menambahkannya kembali ke `parserChain` di `lib/parsers/tiktok.ts`.
+  lewat `curl -v` dan Chrome, 2026-07-24) — cek ulang manual dulu
+  (`curl -v <url-endpoint>`) sebelum menambahkannya kembali ke
+  `parserChain` di `lib/parsers/tiktok.ts`. Kalau ada fallback baru yang
+  diaktifkan, cek juga `ALLOWED_HOST_SUFFIXES` di
+  `app/api/download/route.ts` — URL CDN yang dikembalikan fallback itu
+  perlu ada di allowlist itu juga, atau downloadnya akan 403 walau
+  parsing-nya sukses.
 - **Rate limiting**: dibatasi 10 request/menit per IP (di-HMAC pakai
   `IP_HASH_SECRET`, bukan IP mentah yang disimpan) lewat tabel
   `downloads` di Supabase. Ubah `RATE_LIMIT_PER_MINUTE` di

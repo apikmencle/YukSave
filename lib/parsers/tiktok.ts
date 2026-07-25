@@ -80,17 +80,53 @@ export async function canonicalizeTikTokUrl(url: string): Promise<string> {
   return match ? match[0] : finalUrl;
 }
 
+const TIKWM_RETRY_ATTEMPTS = 2;
+const TIKWM_RETRY_DELAY_MS = 400;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * tikwm is the first (free, no-key) parser in the chain — a transient
+ * hiccup on their end (a 5xx, a dropped connection, a momentary
+ * rate-limit) would otherwise skip straight to a paid/keyed fallback
+ * (RapidAPI, ScrapeCreators) for something a quick retry could have
+ * absorbed for free. Only retries failures that fail fast (connection
+ * refused, immediate 5xx) — a timeout already burned the full
+ * PARSER_TIMEOUT_MS budget, so retrying it risks stacking two full
+ * timeouts and blowing past the platform's own function timeout. An
+ * application-level "video not found" (json.code !== 0, handled below,
+ * not here) is also deliberately not retried — a second attempt can't
+ * fix a genuinely bad/private/deleted URL.
+ */
+async function fetchTikwm(url: string): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= TIKWM_RETRY_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetchWithTimeout(
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+        { headers: { "User-Agent": "Mozilla/5.0" } },
+        PARSER_TIMEOUT_MS
+      );
+      if (!res.ok) throw new Error(`tikwm request failed: HTTP ${res.status}`);
+      return res;
+    } catch (err) {
+      lastErr = err;
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      if (isTimeout || attempt >= TIKWM_RETRY_ATTEMPTS) break;
+      await sleep(TIKWM_RETRY_DELAY_MS);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("tikwm request failed");
+}
+
 /**
  * Parser #1: tikwm.com public endpoint.
  * Free, no key required, but rate-limited and can change without notice.
  */
 async function parseWithTikwm(url: string): Promise<TikTokParseResult> {
-  const res = await fetchWithTimeout(
-    `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
-    { headers: { "User-Agent": "Mozilla/5.0" } },
-    PARSER_TIMEOUT_MS
-  );
-  if (!res.ok) throw new Error("tikwm request failed");
+  const res = await fetchTikwm(url);
 
   const json = await res.json();
   if (json.code !== 0 || !json.data) throw new Error("tikwm parse failed");
@@ -337,12 +373,22 @@ async function parseWithScrapeCreators(url: string): Promise<TikTokParseResult> 
 // is already down). The parseWithTiklydown function itself is left in
 // place in case their cert gets fixed later, but do NOT re-add it to
 // parserChain without re-running the curl check above first.
-// Its replacement as fallback #2 is parseWithTikTokApiDl below (the
-// @tobyg74/tiktok-api-dl npm package's v3 mode), which has verified,
-// unambiguous field names instead of a guessed HTTP response shape.
+// Its replacement as fallback #2 is parseWithScrapeCreators below — a
+// documented, paid API with verified, unambiguous field names instead of
+// a guessed HTTP response shape. It's a no-op (throws immediately) unless
+// SCRAPECREATORS_API_KEY is set, same pattern as parseWithRapidApi below,
+// so leaving it in the chain is safe even if you haven't signed up yet.
+//
+// Order matters here: tikwm first (free, already has its own retry above),
+// then the two keyed fallbacks. Between the two paid options, RapidAPI is
+// tried before ScrapeCreators only because it was wired up first — there's
+// no functional reason to prefer one over the other, so feel free to swap
+// the order (or drop whichever one you don't have a key for) based on
+// which you actually end up subscribing to.
 const parserChain: Parser[] = [
   { name: "tikwm", run: parseWithTikwm },
   { name: "rapidapi", run: parseWithRapidApi },
+  { name: "scrapecreators", run: parseWithScrapeCreators },
 ];
 
 // Keep this referenced so it doesn't trip an unused-export/dead-code lint

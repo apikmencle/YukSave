@@ -5,6 +5,14 @@ import { hashIp, getClientIp } from "@/lib/ip";
 // Only proxy known TikTok CDN / mirror hostnames — this route fetches
 // whatever URL it's given, so an open allowlist would make it an
 // SSRF-style proxy for arbitrary sites.
+//
+// This list was written against tikwm's output. If you enable the
+// RapidAPI or ScrapeCreators fallbacks in lib/parsers/tiktok.ts, check
+// what CDN hostnames THEY return once you've picked a real provider —
+// if they mirror through something not in this list, every download
+// coming from that fallback will silently 403 here even though parsing
+// succeeded. Don't widen this by guessing; add the exact hostname you
+// observe.
 const ALLOWED_HOST_SUFFIXES = [
   "tiktokcdn.com",
   "tiktokcdn-us.com",

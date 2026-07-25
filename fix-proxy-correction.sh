@@ -1,3 +1,20 @@
+#!/usr/bin/env bash
+# KOREKSI untuk apply-yuksave-fixes.sh sebelumnya — request itu SALAH
+# soal middleware.ts vs proxy.ts. Next.js 16 justru mengganti konvensi
+# middleware.ts -> proxy.ts (kebalikan dari yang saya bilang kemarin).
+# Jalankan dari root folder project (folder yang ada package.json-nya).
+set -e
+
+if [ ! -f "package.json" ]; then
+  echo "Error: jalankan script ini dari root folder YukSave (tempat package.json berada)."
+  exit 1
+fi
+
+# Hapus middleware.ts yang salah (hasil "perbaikan" saya kemarin)
+rm -f middleware.ts
+
+# Kembalikan proxy.ts dengan nama file & export yang BENAR untuk Next.js 16
+cat > proxy.ts << 'YUKSAVE_PATCH_EOF'
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -75,3 +92,7 @@ export const config = {
   // proxy (or attach CSP) for those.
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
+YUKSAVE_PATCH_EOF
+
+echo "Selesai. proxy.ts sudah benar untuk Next.js 16."
+echo "Restart dev server (Ctrl+C lalu npm run dev) supaya perubahan kepakai."
