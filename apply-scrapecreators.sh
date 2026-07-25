@@ -1,3 +1,14 @@
+#!/usr/bin/env bash
+# Aktifkan fallback parser ScrapeCreators, keluarkan RapidAPI dari chain
+# aktif (belum ada provider terverifikasi). Jalankan dari root project.
+set -e
+
+if [ ! -f "package.json" ]; then
+  echo "Error: jalankan script ini dari root folder YukSave (tempat package.json berada)."
+  exit 1
+fi
+
+cat > lib/parsers/tiktok.ts << 'YUKSAVE_PATCH_EOF'
 export type TikTokParseResult = {
   title: string;
   author: string;
@@ -423,3 +434,153 @@ export async function parseTikTokUrl(url: string): Promise<TikTokParseResult> {
     }`
   );
 }
+YUKSAVE_PATCH_EOF
+
+cat > .env.local.example << 'YUKSAVE_PATCH_EOF'
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Used to HMAC-hash client IPs before storing them (rate limiting /
+# abuse detection). Any long random string, e.g. `openssl rand -hex 32`.
+# Without this, IP hashes would be brute-forceable (only ~4B possible
+# IPv4 values), so treat it as a real secret — do not reuse across envs.
+IP_HASH_SECRET=
+
+# Admin dashboard (/admin) — pick your own strong values
+ADMIN_PASSWORD=
+ADMIN_SESSION_SECRET=
+
+# Used by sitemap.xml and robots.txt — set to your real production URL
+NEXT_PUBLIC_SITE_URL=https://yuksave.example.com
+
+# Optional: Cloudflare Turnstile bot protection on the download form.
+# Leave both blank to disable — the widget won't render and the server
+# won't check anything, so the app works exactly as before either way.
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+
+# Optional fallback parser for lib/parsers/tiktok.ts, used only when
+# tikwm (the free, keyless parser) is down or blocks a request. Leave
+# blank to skip it — parserChain just throws past it immediately, no code
+# change needed. WITHOUT THIS SET, the app has no real fallback if tikwm
+# goes down or rate-limits you — see the README's "Parser TikTok tidak
+# resmi" note before going live.
+# - SCRAPECREATORS_API_KEY: https://scrapecreators.com — documented, paid
+#   API (1 credit/request, free trial credits available).
+SCRAPECREATORS_API_KEY=
+
+# RAPIDAPI_KEY is intentionally NOT listed here: parseWithRapidApi in
+# lib/parsers/tiktok.ts is parked out of parserChain (its endpoint is
+# still a placeholder, not a real subscribed listing) — see the comment
+# above that function before wiring it back in. Setting this env var
+# alone does nothing until that's done.
+YUKSAVE_PATCH_EOF
+
+cat > README.md << 'YUKSAVE_PATCH_EOF'
+# YukSave
+
+Download video TikTok tanpa watermark — tempel link, dapat file dalam
+hitungan detik. Dibangun dengan Next.js (App Router), Supabase, dan
+di-deploy ke Vercel.
+
+## Struktur project
+
+```
+app/
+  page.tsx           -> UI utama (paste link + hasil download)
+  admin/page.tsx      -> Dashboard analytics (password-protected)
+  api/parse/route.ts -> API route: parsing + caching + rate limit
+  api/admin/          -> API auth + stats untuk dashboard admin
+lib/
+  parsers/tiktok.ts   -> Chain of fallback parsers (tikwm, dst.)
+  supabase.ts         -> Supabase server client
+  admin-auth.ts       -> Validasi session cookie admin
+supabase/
+  schema.sql          -> Tabel `downloads` (cache + rate limiting)
+```
+
+## Cara jalanin secara lokal
+
+```bash
+npm install
+cp .env.local.example .env.local
+# isi SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, IP_HASH_SECRET,
+# ADMIN_PASSWORD, dan ADMIN_SESSION_SECRET di .env.local
+npm run dev
+```
+
+## Setup Supabase
+
+1. Buat project baru di https://supabase.com
+2. Buka SQL editor, jalankan isi `supabase/schema.sql`
+3. Salin `Project URL` dan `service_role` key (Settings > API) ke `.env.local`
+
+## Dashboard Admin
+
+Buka `/admin` untuk lihat statistik: total download, download 24 jam
+dan 7 hari terakhir, serta link yang paling sering diminta.
+
+- `ADMIN_PASSWORD` — password untuk masuk ke `/admin`, pilih yang kuat
+- `ADMIN_SESSION_SECRET` — string acak panjang untuk menandatangani
+  session cookie (bukan password, isi bebas asal panjang & rahasia,
+  misal hasil dari `openssl rand -hex 32`)
+
+## Deploy ke Vercel
+
+1. Push repo ini ke GitHub
+2. Import project di https://vercel.com/new
+3. Tambahkan environment variables yang sama (`SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SECRET`, `ADMIN_PASSWORD`,
+   `ADMIN_SESSION_SECRET`) di pengaturan project Vercel
+4. Deploy
+
+## Catatan penting
+
+- **Parser TikTok tidak resmi**: endpoint utama yang dipakai
+  (`tikwm.com`) bisa berubah atau mati sewaktu-waktu karena bukan API
+  resmi TikTok. `tikwm` sekarang otomatis retry 1x pada kegagalan
+  cepat (5xx/koneksi putus, bukan timeout) sebelum pindah ke parser
+  berikutnya. Chain aktifnya: `tikwm` (gratis, tanpa key) →
+  `scrapecreators` — yang kedua **hanya aktif kalau**
+  `SCRAPECREATORS_API_KEY` diisi di env (lihat `.env.local.example`);
+  **tanpa key itu, aplikasi tidak punya fallback nyata** kalau `tikwm`
+  down. Isi sebelum production. `parseWithRapidApi` juga sudah ditulis
+  di `lib/parsers/tiktok.ts` tapi sengaja **tidak** dimasukkan ke chain
+  — endpoint-nya masih placeholder, bukan listing RapidAPI yang benar
+  sudah disubscribe — baru aktifkan kalau sudah pilih provider spesifik
+  dan verifikasi field mapping-nya. Kandidat fallback lain
+  (`tiklydown.eu.org`) sudah ditulis di `parseWithTiklydown` tapi sengaja
+  TIDAK dimasukkan ke chain karena sertifikat TLS-nya salah konfigurasi
+  di sisi mereka (subjectAltName tidak cocok dengan
+  `api.tiklydown.eu.org`, terverifikasi lewat `curl -v` dan Chrome,
+  2026-07-24) — cek ulang manual dulu (`curl -v <url-endpoint>`) sebelum
+  menambahkannya kembali ke `parserChain` di `lib/parsers/tiktok.ts`.
+  Kalau ada fallback baru yang diaktifkan, cek juga
+  `ALLOWED_HOST_SUFFIXES` di `app/api/download/route.ts` — URL CDN yang
+  dikembalikan fallback itu perlu ada di allowlist itu juga, atau
+  downloadnya akan 403 walau parsing-nya sukses.
+- **Rate limiting**: dibatasi 10 request/menit per IP (di-HMAC pakai
+  `IP_HASH_SECRET`, bukan IP mentah yang disimpan) lewat tabel
+  `downloads` di Supabase. Ubah `RATE_LIMIT_PER_MINUTE` di
+  `app/api/parse/route.ts` sesuai kebutuhan. Jaga `IP_HASH_SECRET`
+  tetap rahasia dan jangan dipakai ulang di environment lain — kalau
+  ini bocor, hash IP di database bisa di-brute-force balik.
+- **Caching**: hasil parsing di-cache 1 jam per URL supaya request yang
+  sama tidak fetch ulang ke TikTok.
+- Proyek ini untuk penggunaan pribadi/edukasi — hormati hak cipta
+  kreator dan ToS platform sumber.
+
+## Langkah lanjutan yang disarankan
+
+- Tambahkan parser fallback kedua (server lain selain tikwm)
+- Tambahkan halaman FAQ + SEO copy untuk kata kunci pencarian
+- Pertimbangkan fitur premium (batch download, no-ads) untuk monetisasi
+YUKSAVE_PATCH_EOF
+
+echo "Selesai. parserChain sekarang: tikwm -> scrapecreators."
+echo ""
+echo "Langkah selanjutnya:"
+echo "1. Daftar di https://scrapecreators.com, ambil API key"
+echo "2. Tambahkan SCRAPECREATORS_API_KEY=<key-kamu> ke .env.local (lokal)"
+echo "3. Tambahkan juga di Vercel: Settings -> Environment Variables"
+echo "4. Restart dev server (Ctrl+C lalu npm run dev) untuk test lokal"
