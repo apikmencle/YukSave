@@ -28,6 +28,7 @@ export const translations = {
       pasteFailed: "Tidak bisa mengakses clipboard. Tempel manual ya.",
       cancel: "Batal",
       slowNotice: "Masih diproses — server sumber sedang lambat, mohon tunggu sebentar.",
+      turnstilePending: "Selesaikan verifikasi keamanan di bawah dulu, ya.",
     },
     history: {
       heading: "Riwayat Unduhan",
@@ -178,6 +179,7 @@ export const translations = {
       pasteFailed: "Couldn't access the clipboard. Please paste it manually.",
       cancel: "Cancel",
       slowNotice: "Still processing — the source server is slow right now, hang tight.",
+      turnstilePending: "Please complete the security check below first.",
     },
     history: {
       heading: "Download History",

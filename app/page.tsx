@@ -34,6 +34,13 @@ type ParseResult = {
 // the server just to get the same rejection back.
 const TIKTOK_URL_PATTERN = /tiktok\.com|vt\.tiktok|vm\.tiktok/;
 
+// Mirrors the same env check Turnstile.tsx does internally: Turnstile is
+// only actually rendered (and therefore only actually gates anything)
+// when a site key is configured. Without this check the submit button
+// would stay permanently disabled in local dev / on deployments that
+// haven't set up Cloudflare yet, since turnstileToken would never get set.
+const TURNSTILE_REQUIRED = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 function downloadHref(sourceUrl: string, filename: string) {
   return `/api/download?url=${encodeURIComponent(sourceUrl)}&filename=${encodeURIComponent(filename)}`;
 }
@@ -145,6 +152,13 @@ export default function HomePage() {
       setError(t.apiErrors.invalid_url);
       return;
     }
+    // Belt-and-suspenders: the submit button is already disabled while
+    // this is true, but a stale click event (e.g. Enter key fired just
+    // before the widget finished loading) could still reach here.
+    if (TURNSTILE_REQUIRED && !turnstileToken) {
+      setError(t.form.turnstilePending);
+      return;
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -244,7 +258,7 @@ export default function HomePage() {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (TURNSTILE_REQUIRED && !turnstileToken)}
             className="px-6 py-3 rounded-xl bg-rec text-white font-body font-semibold hover:bg-rec-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && (

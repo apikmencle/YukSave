@@ -28,10 +28,17 @@ async function verifyTurnstile(token: string | undefined, ip: string): Promise<b
     );
     const data = await res.json();
     return data.success === true;
-  } catch {
+  } catch (err) {
     // If Cloudflare's endpoint itself is unreachable, fail closed —
     // better to briefly block downloads than to silently disable the
-    // check we just paid a network round-trip for.
+    // check we just paid a network round-trip for. Still log it: this
+    // fails every request until Cloudflare (or our network) recovers,
+    // so it needs to show up in Vercel logs rather than just manifesting
+    // as a wave of "verification_failed" reports with no clear cause.
+    console.error(
+      "[api/parse] turnstile siteverify unreachable:",
+      err instanceof Error ? err.message : err
+    );
     return false;
   }
 }
@@ -125,6 +132,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err) {
+    // The client only gets a generic parse_failed message — log the real
+    // reason (which parser chain, which upstream) server-side only, same
+    // pattern as /api/download, so a spike in failures is diagnosable
+    // from Vercel logs instead of just "something broke for some users".
+    console.error(
+      "[api/parse] parseTikTokUrl failed:",
+      err instanceof Error ? err.message : err
+    );
     return NextResponse.json(
       {
         code: "parse_failed",

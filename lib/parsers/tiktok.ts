@@ -413,10 +413,23 @@ export async function parseTikTokUrl(url: string): Promise<TikTokParseResult> {
         err instanceof Error && err.name === "AbortError"
           ? new Error(`${parser.name} timed out after ${PARSER_TIMEOUT_MS}ms`)
           : err;
+      // Log each individual failure, not just the last one thrown at the
+      // end of the chain — otherwise if e.g. tikwm fails for a reason
+      // unrelated to scrapecreators (which then succeeds), that first
+      // failure vanishes with no trace even though it's exactly the kind
+      // of thing worth noticing (rate limit? upstream shape change?).
+      console.warn(
+        `[tiktok-parser] ${parser.name} failed, trying next:`,
+        lastError instanceof Error ? lastError.message : lastError
+      );
       // try next parser in the chain
     }
   }
 
+  console.error(
+    "[tiktok-parser] all parsers exhausted:",
+    lastError instanceof Error ? lastError.message : "unknown error"
+  );
   throw new Error(
     `Semua parser gagal. Terakhir: ${
       lastError instanceof Error ? lastError.message : "unknown error"
