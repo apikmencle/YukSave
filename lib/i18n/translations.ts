@@ -207,7 +207,7 @@ export const translations = {
       downloadNoWatermark: "Download (No Watermark)",
       downloadWithWatermark: "With Watermark",
       downloadAudio: "Download Audio (MP3)",
-      slideshowCount: (n: number) => `${n} photos in this slideshow`,
+      slideshowCount: (n: number) => `${n} ${n === 1 ? "photo" : "photos"} in this slideshow`,
       photoAlt: (i: number) => `Photo ${i}`,
       download: "Download",
       downloadAllPhotos: "Download All (ZIP)",

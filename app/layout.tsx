@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Archivo_Black, Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
@@ -34,6 +34,40 @@ const themeInitScript = `
 `;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://yuksave.example.com";
+
+// JSON-LD structured data — gives Google an explicit, machine-readable
+// description of what this site is, instead of relying purely on text
+// inference. Deliberately does NOT include aggregateRating/review fields:
+// those would need to reflect real user ratings actually collected
+// somewhere, and fabricating them is a Google Search spam violation that
+// risks a manual action, not just "ignored" — the honest, fields-you-can-
+// actually-back-up version below is the safe one.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "YukSave",
+  url: SITE_URL,
+  description:
+    "Download video, foto slideshow, dan audio TikTok tanpa watermark, gratis dan cepat, langsung dari browser tanpa aplikasi.",
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "Any",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "IDR",
+  },
+};
+
+export const viewport: Viewport = {
+  // Matches --color-paper in both themes (app/globals.css). Mobile
+  // browsers use this to tint their own chrome (status bar / address
+  // bar), so it should track light/dark instead of staying one fixed
+  // color regardless of the site's own theme.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EDEDE7" },
+    { media: "(prefers-color-scheme: dark)", color: "#12161D" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -91,6 +125,12 @@ export default async function RootLayout({
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="font-body">

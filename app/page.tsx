@@ -115,10 +115,20 @@ export default function HomePage() {
       // Fetch every photo through our own /api/download proxy — same
       // origin, so no CORS problem — rather than the TikTok CDN
       // directly, which wouldn't let client-side JS read the bytes.
+      // Each fetch is checked for res.ok before reading the body: without
+      // this, a failed proxy request (expired signed URL, host rejected,
+      // upstream timeout) still returns a response — just a JSON error
+      // body instead of image bytes — and .blob() happily wraps that too.
+      // That silently produced a "successful" zip containing a corrupt
+      // file (JSON text saved as .jpg) with no indication anything failed.
       const blobs = await Promise.all(
-        result.images.map((imgUrl) =>
-          fetch(downloadHref(imgUrl, "photo.jpg")).then((res) => res.blob())
-        )
+        result.images.map(async (imgUrl) => {
+          const res = await fetch(downloadHref(imgUrl, "photo.jpg"));
+          if (!res.ok) {
+            throw new Error(`Gagal mengunduh salah satu foto (HTTP ${res.status})`);
+          }
+          return res.blob();
+        })
       );
       blobs.forEach((blob, i) => {
         zip.file(`${result.title || "yuksave"}-${i + 1}.jpg`, blob);
@@ -131,7 +141,8 @@ export default function HomePage() {
       a.download = `${result.title || "yuksave"}.zip`;
       a.click();
       URL.revokeObjectURL(zipUrl);
-    } catch {
+    } catch (err) {
+      console.error("[handleDownloadAllPhotos] failed:", err instanceof Error ? err.message : err);
       setError(t.form.errorGeneric);
     } finally {
       setZippingPhotos(false);
