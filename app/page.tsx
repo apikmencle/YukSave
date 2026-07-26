@@ -630,6 +630,223 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section aria-labelledby="panduan-heading" className="w-full max-w-xl mt-16">
+        <p className="font-mono text-[11px] tracking-wider text-ink-soft uppercase mb-1.5">
+          Seri Panduan
+        </p>
+        <h2 id="panduan-heading" className="font-display text-xl text-ink mb-5">
+          Panduan &amp; Tips
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/panduan/download-tiktok-tanpa-watermark-iphone"
+            className="group flex items-start gap-3 bg-surface border border-tape rounded-xl p-4 transition-all duration-150 hover:border-ink hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_rgb(var(--color-ink))]"
+          >
+            <svg
+              className="shrink-0 mt-0.5 text-ink"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="7" y="2" width="10" height="20" rx="2" />
+              <line x1="11" y1="18" x2="13" y2="18" />
+            </svg>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-ink">
+                Download tanpa watermark di iPhone
+              </span>
+              <span className="block text-xs text-ink-soft mt-0.5">
+                Lewat Safari, tanpa install apa pun.
+              </span>
+            </span>
+            <svg
+              className="shrink-0 mt-1 text-ink-soft transition-transform group-hover:translate-x-0.5 group-hover:text-rec"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+
+          <Link
+            href="/panduan/download-tiktok-tanpa-watermark-android"
+            className="group flex items-start gap-3 bg-surface border border-tape rounded-xl p-4 transition-all duration-150 hover:border-ink hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_rgb(var(--color-ink))]"
+          >
+            <svg
+              className="shrink-0 mt-0.5 text-ink"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="6" y="2" width="12" height="20" rx="2" />
+              <line x1="10" y1="18" x2="14" y2="18" />
+            </svg>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-ink">
+                Download tanpa watermark di Android
+              </span>
+              <span className="block text-xs text-ink-soft mt-0.5">
+                Lewat Chrome, tanpa APK tambahan.
+              </span>
+            </span>
+            <svg
+              className="shrink-0 mt-1 text-ink-soft transition-transform group-hover:translate-x-0.5 group-hover:text-rec"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+
+          <Link
+            href="/panduan/apa-itu-watermark-tiktok"
+            className="group flex items-start gap-3 bg-surface border border-tape rounded-xl p-4 transition-all duration-150 hover:border-ink hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_rgb(var(--color-ink))]"
+          >
+            <svg
+              className="shrink-0 mt-0.5 text-ink"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="11" x2="12" y2="16" />
+              <circle cx="12" cy="7.5" r="0.9" fill="currentColor" stroke="none" />
+            </svg>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-ink">
+                Apa itu watermark TikTok?
+              </span>
+              <span className="block text-xs text-ink-soft mt-0.5">
+                Kenapa logo itu muncul, dan kapan boleh dihilangkan.
+              </span>
+            </span>
+            <svg
+              className="shrink-0 mt-1 text-ink-soft transition-transform group-hover:translate-x-0.5 group-hover:text-rec"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+
+          <Link
+            href="/panduan/download-foto-slideshow-tiktok"
+            className="group flex items-start gap-3 bg-surface border border-tape rounded-xl p-4 transition-all duration-150 hover:border-ink hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_rgb(var(--color-ink))]"
+          >
+            <svg
+              className="shrink-0 mt-0.5 text-ink"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="6" width="14" height="14" rx="2" />
+              <path d="M7 2h14v14" />
+            </svg>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-ink">
+                Download foto slideshow
+              </span>
+              <span className="block text-xs text-ink-soft mt-0.5">
+                Simpan tiap foto satu per satu, langsung dari server.
+              </span>
+            </span>
+            <svg
+              className="shrink-0 mt-1 text-ink-soft transition-transform group-hover:translate-x-0.5 group-hover:text-rec"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+
+          <Link
+            href="/panduan/download-audio-musik-tiktok-mp3"
+            className="group flex items-start gap-3 bg-surface border border-tape rounded-xl p-4 transition-all duration-150 hover:border-ink hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_rgb(var(--color-ink))] sm:col-span-2"
+          >
+            <svg
+              className="shrink-0 mt-0.5 text-ink"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 18V5l11-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="17" cy="16" r="3" />
+            </svg>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-ink">
+                Ambil audio/musik jadi MP3
+              </span>
+              <span className="block text-xs text-ink-soft mt-0.5">
+                Simpan musik dari video TikTok sebagai file terpisah.
+              </span>
+            </span>
+            <svg
+              className="shrink-0 mt-1 text-ink-soft transition-transform group-hover:translate-x-0.5 group-hover:text-rec"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+        </div>
+      </section>
+
       <footer className="w-full max-w-xl mt-16 pt-6 border-t border-tape text-center">
         <p className="text-xs text-ink-soft">{t.footer.note}</p>
         <div className="mt-3 flex items-center justify-center gap-3 text-xs">
