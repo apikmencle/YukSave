@@ -441,16 +441,22 @@ export default function HomePage() {
           <div className="flex gap-4">
             {!result.images && (result.noWatermarkUrl || result.watermarkUrl) ? (
               <video
-  src={result.noWatermarkUrl || result.watermarkUrl}
-  poster={result.thumbnail}
-  controls
-  controlsList="nodownload noplaybackrate nofullscreen"
-  disablePictureInPicture
-  playsInline
-  preload="none"
-  onContextMenu={(e) => e.preventDefault()}
-  className="w-24 h-32 object-cover rounded-lg border border-tape bg-black shrink-0"
-/>
+                src={result.noWatermarkUrl || result.watermarkUrl}
+                poster={result.thumbnail}
+                controls
+                controlsList="nodownload noplaybackrate nofullscreen"
+                disablePictureInPicture
+                playsInline
+                preload="none"
+                onContextMenu={(e) => e.preventDefault()}
+                className="w-24 h-32 object-cover rounded-lg border border-tape bg-black shrink-0"
+              />
+            ) : (
+              <SafeThumb
+                src={result.thumbnail}
+                alt={result.title}
+                className="w-24 h-32 rounded-lg border border-tape shrink-0"
+              />
             )}
             <div className="flex-1 min-w-0">
               <p className="font-body font-semibold text-ink truncate">
