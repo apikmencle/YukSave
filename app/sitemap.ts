@@ -11,6 +11,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: `${SITE_URL}/panduan/download-tiktok-tanpa-watermark-iphone`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/panduan/download-tiktok-tanpa-watermark-android`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
       url: `${SITE_URL}/privacy`,
       lastModified: new Date(),
       changeFrequency: "yearly",
