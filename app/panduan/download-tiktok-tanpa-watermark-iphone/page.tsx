@@ -125,6 +125,17 @@ export default function DownloadTiktokIphonePage() {
         </div>
       </section>
 
+      <p className="text-sm text-ink-soft mb-6">
+        Penasaran kenapa TikTok menambahkan watermark sejak awal? Baca{" "}
+        <Link
+          href="/panduan/apa-itu-watermark-tiktok"
+          className="text-ink underline hover:text-rec"
+        >
+          penjelasan lengkapnya di sini
+        </Link>
+        .
+      </p>
+
       <p className="text-xs text-ink-soft border-t border-tape pt-6">
         Untuk penggunaan pribadi &mdash; hormati hak cipta kreator asli.
       </p>
