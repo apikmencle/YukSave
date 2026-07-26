@@ -58,6 +58,49 @@ const jsonLd = {
   },
 };
 
+// FAQPage schema — mirrors the FAQ copy rendered in app/page.tsx
+// (lib/i18n/translations.ts, "id" locale, which is the default/server-
+// rendered language). Keep this in sync if that copy changes: Google
+// penalizes FAQ schema that doesn't match visible on-page content.
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Apakah YukSave benar-benar gratis?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Ya, download video TikTok tanpa watermark di YukSave gratis sepenuhnya, tanpa batas jumlah download dan tanpa perlu login.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Apakah perlu install aplikasi?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Tidak. YukSave berjalan langsung di browser HP atau komputer, tidak perlu instalasi apapun.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Kenapa hasil downloadnya tidak ada watermark?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "YukSave mengambil versi video langsung dari server TikTok sebelum watermark ditambahkan, sehingga hasilnya bersih.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Bisa download foto slideshow atau audio saja?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Bisa. Kalau link yang kamu tempel berupa postingan foto slideshow, YukSave akan menampilkan setiap foto untuk diunduh satu per satu. Kalau videonya punya audio yang bisa diambil terpisah, tombol \u201cDownload Audio (MP3)\u201d akan muncul juga.",
+      },
+    },
+  ],
+};
+
 export const viewport: Viewport = {
   // Matches --color-paper in both themes (app/globals.css). Mobile
   // browsers use this to tint their own chrome (status bar / address
@@ -131,6 +174,12 @@ export default async function RootLayout({
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="font-body">
