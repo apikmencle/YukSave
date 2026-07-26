@@ -470,7 +470,7 @@ export default function HomePage() {
                 {result.noWatermarkUrl && (
                   <a
                     href={downloadHref(result.noWatermarkUrl, `${result.title}.mp4`)}
-                    className="px-4 py-2 rounded-lg bg-ink text-white text-sm font-medium hover:bg-ink/90"
+                    className="px-4 py-2 rounded-lg bg-ink text-paper text-sm font-medium hover:bg-ink/90"
                   >
                     {t.result.downloadNoWatermark}
                   </a>
@@ -506,7 +506,7 @@ export default function HomePage() {
                   type="button"
                   onClick={handleDownloadAllPhotos}
                   disabled={zippingPhotos}
-                  className="px-3 py-1.5 rounded-lg bg-ink text-white text-xs font-medium hover:bg-ink/90 disabled:opacity-60 flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-ink text-paper text-xs font-medium hover:bg-ink/90 disabled:opacity-60 flex items-center gap-1.5"
                 >
                   {zippingPhotos && (
                     <svg
@@ -551,7 +551,7 @@ export default function HomePage() {
                     />
                     <a
                       href={downloadHref(imgUrl, `${result.title}-${i + 1}.jpg`)}
-                      className="block text-center py-1.5 text-xs font-medium text-white bg-ink hover:bg-ink/90"
+                      className="block text-center py-1.5 text-xs font-medium text-paper bg-ink hover:bg-ink/90"
                     >
                       {t.result.download}
                     </a>

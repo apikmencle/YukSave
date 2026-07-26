@@ -118,7 +118,7 @@ export default function AdminPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 rounded-xl bg-ink text-white font-semibold disabled:opacity-60"
+            className="w-full px-6 py-3 rounded-xl bg-ink text-paper font-semibold disabled:opacity-60"
           >
             {loading ? "Memproses..." : "Masuk"}
           </button>
