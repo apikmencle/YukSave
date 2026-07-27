@@ -13,6 +13,8 @@ const CDN_HOSTS = [
   "*.ibytedtos.com",
   "*.ibyteimg.com",
   "*.muscdn.com",
+  "*.akamaized.net",
+  "*.tiktokv.us",
 ]
   .map((h) => `https://${h}`)
   .join(" ");

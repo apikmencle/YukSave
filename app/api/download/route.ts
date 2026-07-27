@@ -21,6 +21,13 @@ const ALLOWED_HOST_SUFFIXES = [
   "ibytedtos.com",
   "ibyteimg.com",
   "muscdn.com",
+  // tikwm's `wmplay` (watermarked) field commonly points straight at
+  // TikTok's original Akamai-hosted CDN instead of through one of the
+  // domains above — the no-watermark `play` field doesn't, which is why
+  // this was missed until someone actually clicked "download with
+  // watermark". Observed 2026-07-27 via a live "Host not allowed" 403.
+  "akamaized.net",
+  "tiktokv.us",
 ];
 
 // Higher than /api/parse's limit on purpose: a single legitimate result
