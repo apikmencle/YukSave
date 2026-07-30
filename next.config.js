@@ -13,6 +13,7 @@ const nextConfig = {
       { protocol: "https", hostname: "**.ibytedtos.com" },
       { protocol: "https", hostname: "**.ibyteimg.com" },
       { protocol: "https", hostname: "**.muscdn.com" },
+      { protocol: "https", hostname: "**.akamaized.net" },
     ],
   },
   async headers() {

@@ -3,28 +3,20 @@
 import { useEffect, useState } from "react";
 
 type Stats = {
-  total: number;
-  last24h: number;
-  last7d: number;
+  actualDownloads24h: number;
+  uniqueParses24h: number;
+  uniqueParses7d: number;
   topUrls: { url: string; count: number }[];
 };
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
-  // Distinguishes "we haven't checked yet" from "checked, not logged in" —
-  // without this the login form would flash on screen for a split second
-  // even when the person already has a valid 12h session cookie.
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
 
-  // The admin session cookie is httpOnly and lasts 12h, but until now the
-  // page always started at the login form regardless — forcing a re-login
-  // on every refresh even with a still-valid cookie. Probe /api/admin/stats
-  // once on mount: 200 means the cookie is still good, so skip straight to
-  // the dashboard with the data we already fetched.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -36,7 +28,6 @@ export default function AdminPage() {
           setAuthed(true);
         }
       } catch {
-        // No session / offline — fall through to the login form.
       } finally {
         if (!cancelled) setCheckingSession(false);
       }
@@ -146,23 +137,33 @@ export default function AdminPage() {
         <>
           <div className="grid grid-cols-3 gap-4 mb-10">
             <div className="bg-surface border-2 border-ink rounded-xl p-4 text-center">
-              <p className="text-2xl font-display text-ink">{stats.total}</p>
-              <p className="text-xs text-ink-soft mt-1">Total download</p>
+              <p className="text-2xl font-display text-ink">
+                {stats.actualDownloads24h}
+              </p>
+              <p className="text-xs text-ink-soft mt-1">
+                Download nyata (24 jam)
+              </p>
             </div>
             <div className="bg-surface border-2 border-ink rounded-xl p-4 text-center">
               <p className="text-2xl font-display text-ink">
-                {stats.last24h}
+                {stats.uniqueParses24h}
               </p>
-              <p className="text-xs text-ink-soft mt-1">24 jam terakhir</p>
+              <p className="text-xs text-ink-soft mt-1">
+                Video baru diproses (24 jam)
+              </p>
             </div>
             <div className="bg-surface border-2 border-ink rounded-xl p-4 text-center">
-              <p className="text-2xl font-display text-ink">{stats.last7d}</p>
-              <p className="text-xs text-ink-soft mt-1">7 hari terakhir</p>
+              <p className="text-2xl font-display text-ink">
+                {stats.uniqueParses7d}
+              </p>
+              <p className="text-xs text-ink-soft mt-1">
+                Video baru diproses (7 hari)
+              </p>
             </div>
           </div>
 
           <h2 className="font-display text-lg text-ink mb-3">
-            Link paling sering diminta
+            Link paling sering diproses ulang (baru, bukan cache)
           </h2>
           <div className="bg-surface border-2 border-ink rounded-xl divide-y divide-tape">
             {stats.topUrls.length === 0 && (
