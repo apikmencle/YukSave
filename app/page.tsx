@@ -7,10 +7,11 @@ import { addToHistory, clearHistory, loadHistory, type HistoryItem } from "@/lib
 import Turnstile from "@/components/Turnstile";
 import SafeThumb from "@/components/SafeThumb";
 
-// After this long in the "loading" state, show a note that the source
-// server seems slow rather than leaving the person staring at a silent
-// spinner wondering if the app is stuck.
-const SLOW_NOTICE_MS = 4000;
+// While parsing is in progress, cycle through these status lines instead
+// of a silent spinner (or a single "server sedang lambat" message once
+// things take a while) — a sequence of small, concrete steps reads as
+// active progress rather than the app being stuck or slow.
+const LOADING_STEP_MS = 1800;
 
 type ParseResult = {
   title: string;
@@ -51,12 +52,12 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
-  const [slow, setSlow] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [zippingPhotos, setZippingPhotos] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadingStepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
 
   // Load on mount only — this is on-device data, never fetched from our
@@ -153,7 +154,7 @@ export default function HomePage() {
     e.preventDefault();
     setError(null);
     setResult(null);
-    setSlow(false);
+    setLoadingStep(0);
 
     if (!url.trim()) {
       setError(t.form.errorEmpty);
@@ -173,7 +174,10 @@ export default function HomePage() {
 
     const controller = new AbortController();
     abortRef.current = controller;
-    slowTimerRef.current = setTimeout(() => setSlow(true), SLOW_NOTICE_MS);
+    setLoadingStep(0);
+    loadingStepTimerRef.current = setInterval(() => {
+      setLoadingStep((s) => Math.min(s + 1, t.form.loadingSteps.length - 1));
+    }, LOADING_STEP_MS);
 
     setLoading(true);
     try {
@@ -204,8 +208,7 @@ export default function HomePage() {
       if (err instanceof DOMException && err.name === "AbortError") return;
       setError(t.form.errorConnection);
     } finally {
-      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
-      setSlow(false);
+      if (loadingStepTimerRef.current) clearInterval(loadingStepTimerRef.current);
       setLoading(false);
       abortRef.current = null;
     }
@@ -312,11 +315,6 @@ export default function HomePage() {
         {error && (
           <p className="mt-3 text-sm text-rec-dark font-medium" role="alert">
             {error}
-          </p>
-        )}
-        {loading && slow && (
-          <p className="mt-3 text-sm text-ink-soft" role="status">
-            {t.form.slowNotice}
           </p>
         )}
       </form>
@@ -428,6 +426,20 @@ export default function HomePage() {
                 <div className="skeleton h-9 rounded-lg w-24" />
               </div>
             </div>
+          </div>
+          <div
+            className="mt-5 pt-4 border-t border-tape flex items-center gap-2"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="flex items-end gap-0.5 shrink-0" aria-hidden="true">
+              <span className="loading-dot w-1.5 h-1.5 rounded-full bg-rec" />
+              <span className="loading-dot w-1.5 h-1.5 rounded-full bg-rec" />
+              <span className="loading-dot w-1.5 h-1.5 rounded-full bg-rec" />
+            </span>
+            <p key={loadingStep} className="fade-step text-sm text-ink-soft">
+              {t.form.loadingSteps[loadingStep]}
+            </p>
           </div>
         </div>
       )}

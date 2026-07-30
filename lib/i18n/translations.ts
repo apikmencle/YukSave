@@ -27,7 +27,12 @@ export const translations = {
       pasteAria: "Tempel dari clipboard",
       pasteFailed: "Tidak bisa mengakses clipboard. Tempel manual ya.",
       cancel: "Batal",
-      slowNotice: "Masih diproses — server sumber sedang lambat, mohon tunggu sebentar.",
+      loadingSteps: [
+        "Menghubungi TikTok...",
+        "Mengambil detail video...",
+        "Menyiapkan tautan unduhan...",
+        "Hampir selesai, mohon tunggu sebentar...",
+      ],
       turnstilePending: "Selesaikan verifikasi keamanan di bawah dulu, ya.",
     },
     history: {
@@ -178,7 +183,12 @@ export const translations = {
       pasteAria: "Paste from clipboard",
       pasteFailed: "Couldn't access the clipboard. Please paste it manually.",
       cancel: "Cancel",
-      slowNotice: "Still processing — the source server is slow right now, hang tight.",
+      loadingSteps: [
+        "Contacting TikTok...",
+        "Fetching video details...",
+        "Preparing your download...",
+        "Almost there, hang tight...",
+      ],
       turnstilePending: "Please complete the security check below first.",
     },
     history: {
